@@ -1,5 +1,6 @@
 package com.userservice.controller;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
 import com.userservice.model.User;
 import com.userservice.service.UserService;
 
@@ -27,6 +29,7 @@ public class UserController {
 	UserService userService;
 	
 	@GetMapping("/user/")
+	@HystrixCommand(fallbackMethod = "getDefaultUsers")
 	public ResponseEntity<List<User>> getAllUsers(){
 		
 		List<User> users = userService.findAllUsers();
@@ -38,21 +41,36 @@ public class UserController {
 		return new ResponseEntity<>(users, HttpStatus.OK);
 	}
 	
+  public ResponseEntity<List<User>> getDefaultUsers(){
+		
+		List<User> users = new ArrayList<User>();
+		users.add(new User(1,"ABC","Naveen"));
+		
+		return new ResponseEntity<>(users, HttpStatus.OK);
+	}
+
+	
 	@GetMapping("/user/{id}")
-	public ResponseEntity<?> getBook(@PathVariable Integer id){
+	@HystrixCommand(fallbackMethod = "getUser")
+	public ResponseEntity<?> getUser(@PathVariable Integer id){
 		
 		User user = userService.findUserById(id);
 		
 		if(user == null) {
 			
-			return new ResponseEntity<>("Book not Found with Id", HttpStatus.NOT_FOUND);
+			return new ResponseEntity<>("User not Found with Id", HttpStatus.NOT_FOUND);
 		}
 		return new ResponseEntity<>(user,HttpStatus.OK);
 		
 	}
 	
+	public ResponseEntity<?> getDeafultUser(@PathVariable Integer id){
+		User user = new User(7,"Naveen","Not Found");
+		return new ResponseEntity<>(user,HttpStatus.OK);
+	}
+	
 	@PostMapping("/user/")
-	public ResponseEntity<?> createBook(@RequestBody User user){
+	public ResponseEntity<?> createUser(@RequestBody User user){
 		
 		userService.save(user);
 		
@@ -61,7 +79,7 @@ public class UserController {
 	}
 	
 	@PutMapping("/user/{id}")
-	public ResponseEntity<?> updateBook(@PathVariable Integer id,@RequestBody User user){
+	public ResponseEntity<?> updateUser(@PathVariable Integer id,@RequestBody User user){
 		
 		User userById = userService.findUserById(id);
 		
@@ -78,7 +96,7 @@ public class UserController {
 	
 	
 	@DeleteMapping("/user/{id}")
-	public ResponseEntity<?> deleteBook(@PathVariable Integer id){
+	public ResponseEntity<?> deleteUser(@PathVariable Integer id){
 		
 		User user = userService.findUserById(id);
 		
@@ -95,7 +113,7 @@ public class UserController {
 	}
 	
 	@DeleteMapping("/users/")
-	public ResponseEntity<?> deleteBooks(){
+	public ResponseEntity<?> deleteUsers(){
 	
 		userService.deleteAllUsers();
 		
